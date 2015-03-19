@@ -40,21 +40,19 @@ cutOut n pos (bl,tr)
   | pos == Corner  = tlRec ++ brRec ++ blRec
   | otherwise      = []
   where
-    (topLeft, botLeft, botRight) = sector (bl,tr)
     tlRec = cutOut (n-1) Corner topLeft
     brRec = cutOut (n-1) Corner botRight
     blRec = cutOut (n-1) BotLeft botLeft
-
-sector ((x1, y1), (x2, y2)) = (topLeft, botLeft, botRight) where
-  topLeft   = ((x1, halfY + 1), (halfX, y2))
-  botLeft   = ((x1, y1), (halfX, halfY))
-  botRight  = ((halfX + 1, y1), (x2, halfY - 1))
-  halfX = x1 + ((x2-x1) `div` 2)
-  halfY = y1 + ((y2-y1) `div` 2)
-
-cutTopRight bounds@(bl,tr) = extra:[(x, False) | x <- negatedSquares] where
-    negatedSquares = filter (isTopRight (bl,tr)) $ range (bl,tr)
-    isTopRight bounds@((x1, y1), (x2, y2)) (x, y) = x' + y' > 1 where
+    (topLeft, botLeft, botRight) = sector (bl,tr) where
+      sector ((x1, y1), (x2, y2)) = (topLeft, botLeft, botRight) where
+        topLeft   = ((x1, halfY + 1), (halfX, y2))
+        botLeft   = ((x1, y1), (halfX, halfY))
+        botRight  = ((halfX + 1, y1), (x2, halfY - 1))
+        halfX     = x1 + ((x2-x1) `div` 2)
+        halfY     = y1 + ((y2-y1) `div` 2)
+    cutTopRight bounds@(bl,tr) = extra:[(x, False) | x <- negatedSquares] where
+      negatedSquares = filter (isTopRight (bl,tr)) $ range (bl,tr)
+      isTopRight bounds@((x1, y1), (x2, y2)) (x, y) = x' + y' > 1 where
         x' = fromIntegral (x - x1) / fromIntegral (x2 - x1)
         y' = fromIntegral (y - y1) / fromIntegral (y2 - y1)
-    extra = ((fst tr, snd bl), False)
+      extra = ((fst tr, snd bl), False)
