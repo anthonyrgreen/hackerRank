@@ -36,23 +36,24 @@ cutOut :: Int -> Orientation -> -- recursion level, orientation
           [((Int, Int), Bool)] -- indices to change
 cutOut (-1) _ _ = []
 cutOut n pos (bl,tr)
-  | pos == BotLeft = cutTopRight (bl,tr) ++ tlRec ++ brRec ++ blRec
-  | pos == Corner  = tlRec ++ brRec ++ blRec
+  | pos == BotLeft = cutTopRight (bl,tr) ++ recursiveRemoves
+  | pos == Corner  = recursiveRemoves
   | otherwise      = []
   where
-    tlRec = cutOut (n-1) Corner topLeft
-    brRec = cutOut (n-1) Corner botRight
-    blRec = cutOut (n-1) BotLeft botLeft
-    (topLeft, botLeft, botRight) = sector (bl,tr) where
-      sector ((x1, y1), (x2, y2)) = (topLeft, botLeft, botRight) where
-        topLeft   = ((x1, halfY + 1), (halfX, y2))
-        botLeft   = ((x1, y1), (halfX, halfY))
-        botRight  = ((halfX + 1, y1), (x2, halfY - 1))
-        halfX     = x1 + ((x2-x1) `div` 2)
-        halfY     = y1 + ((y2-y1) `div` 2)
-    cutTopRight bounds@(bl,tr) = extra:[(x, False) | x <- negatedSquares] where
-      negatedSquares = filter (isTopRight (bl,tr)) $ range (bl,tr)
-      isTopRight bounds@((x1, y1), (x2, y2)) (x, y) = x' + y' > 1 where
+    recursiveRemoves              = tlRec ++ brRec ++ blRec
+    tlRec                         = cutOut (n-1) Corner topLeft
+    brRec                         = cutOut (n-1) Corner botRight
+    blRec                         = cutOut (n-1) BotLeft botLeft
+    (topLeft, botLeft, botRight)  = sector (bl,tr)
+    sector ((x1, y1), (x2, y2))   = (topLeft, botLeft, botRight) where
+      topLeft     = ((x1, halfY + 1), (halfX, y2))
+      botLeft     = ((x1, y1), (halfX, halfY))
+      botRight    = ((halfX + 1, y1), (x2, halfY - 1))
+      halfX       = x1 + ((x2-x1) `div` 2)
+      halfY       = y1 + ((y2-y1) `div` 2)
+    cutTopRight (bl,tr) = extra:[(x, False) | x <- negatedSquares] where
+      extra           = ((fst tr, snd bl), False)
+      negatedSquares  = filter (isTopRight (bl,tr)) $ range (bl,tr)
+      isTopRight ((x1, y1), (x2, y2)) (x, y) = x' + y' > 1 where
         x' = fromIntegral (x - x1) / fromIntegral (x2 - x1)
         y' = fromIntegral (y - y1) / fromIntegral (y2 - y1)
-      extra = ((fst tr, snd bl), False)
