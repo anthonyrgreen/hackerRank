@@ -13,7 +13,7 @@ main = do
 type Point = (Int, Int)
 fI = fromIntegral
 
-solve :: [Point] -> Double
+solve :: [(Int, Int)] -> Double
 solve points = perimeter . toPairs . solvePath $ points
   where
     toPairs (p1:p0:ps)  = (p1, p0) : toPairs (p0:ps)
@@ -22,23 +22,29 @@ solve points = perimeter . toPairs . solvePath $ points
     addPath p x         = p + uncurry distance x
 
 solvePath :: [Point] -> [Point]
-solvePath points = foldl nextInHull [x] sorted
+solvePath points = upperHull ++ tail lowerHull
   where
-    x:sorted                    = sortPoints points
-    nextInHull [x0] p           = p:[x0]
-    nextInHull (x2:x1:xs) p
-      | clockwise x1 x2 p == LT = p:x2:x1:xs
-      | otherwise               = nextInHull (x1:xs) p
+    upperHull     = orientedHull LT sortedPoints
+    lowerHull     = reverse . orientedHull GT $ sortedPoints
+    sortedPoints  = sortBy pointComparison points
 
-sortPoints :: [Point] -> [Point]
-sortPoints points = y:start ++ end ++ [y]
+orientedHull :: Ordering -> [Point] -> [Point]
+orientedHull orientation (p:points) = reverse . foldl nextInHull [p] $ points
   where
-    (end, y:start)  = span (/= yMax) sorted
-    sorted          = sortBy (clockwise yMax) points
-    yMax            = maximumBy (\(_,y0) (_,y1) -> compare y0 y1) points
+    nextInHull [p] x                          = x:[p]
+    nextInHull (p2:p1:ps) x
+      | rightHandRule p1 p2 x == orientation  = x:p2:p1:ps
+      | otherwise                             = nextInHull (p1:ps) x
+
+pointComparison :: Point -> Point -> Ordering
+pointComparison (x0,y0) (x1,y1)
+  | x0 /= x1  = x0 `compare` x1 
+  | otherwise = y1 `compare` y0
+
+rightHandRule :: Point -> Point -> Point -> Ordering
+rightHandRule (x0,y0) (x1,y1) (x2,y2) = z `compare` 0
+  where
+    z = (x1-x0)*(y2-y0) - (y1-y0)*(x2-x0)
 
 distance :: Point -> Point -> Double
 distance (x0,y0) (x1,y1) = sqrt $ (fI x1 - fI x0)**2 + (fI y1 - fI y0)**2
-
-clockwise :: Point -> Point -> Point -> Ordering
-clockwise (x0,y0) (x1,y1) (x2,y2) = ((x1-x0)*(y2-y0) - (x2-x0)*(y1-y0)) `compare` 0
