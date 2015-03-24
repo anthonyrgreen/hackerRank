@@ -7,12 +7,14 @@ parseTree :: String -> Tree Cell
 parseTree = parse . segment . filter (/= ' ')
 
 segment :: String -> (String, String, String)
-segment = fst . runState $ do
-  let extractBranchSt = state extractBranch
-  left <- extractBranchSt
-  value <- extractBranchSt
-  right <- extractBranchSt
-  return (left, value, right)
+segment = fst . runState extractSegments . tail . init
+  where
+    extractSegments = do
+      let extractBranchSt = state extractBranch
+      left  <- extractBranchSt
+      value <- extractBranchSt
+      right <- extractBranchSt
+      return (left, value, right)
 
 extractBranch :: String -> (String, String)
 extractBranch (i:input)
