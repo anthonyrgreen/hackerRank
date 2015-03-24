@@ -3,8 +3,18 @@ import Control.Monad.State
 data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Show, Eq)
 data Cell = On | Off deriving (Show, Eq)
 
+parse :: String -> Tree Cell
+parse = parseTree . filter (/= ' ')
+
 parseTree :: String -> Tree Cell
-parseTree = parse . segment . filter (/= ' ')
+parseTree = makeTree . segment 
+
+makeTree :: (String, String, String) -> Tree Cell
+makeTree (ls,x:[],rs) = Node (charToCell x) (makeBranch ls) (makeBranch rs)
+  where
+    makeBranch (x:xs)
+      | x == '('  = parseTree (x:xs)
+      | otherwise = Node (charToCell x) Empty Empty
 
 segment :: String -> (String, String, String)
 segment = fst . runState extractSegments . tail . init
@@ -18,21 +28,14 @@ segment = fst . runState extractSegments . tail . init
 
 extractBranch :: String -> (String, String)
 extractBranch (i:input)
-  | i == '('    = foo' (i:[], input) 1
-  | otherwise   = (i:[], input)
+  | i /= '('  = (i:[], input)
+  | otherwise = getTree (i:[], input) 1
   where
-    foo' (parsed, rest) 0 = (reverse parsed, rest)
-    foo' (parsed, r:rest) n
-      | r == '('  = foo' (r:parsed, rest) (n+1)
-      | r == ')'  = foo' (r:parsed, rest) (n-1)
-      | otherwise = foo' (r:parsed, rest) n
-
-parse :: (String, String, String) -> Tree Cell
-parse (ls, x:[], rs) = Node (charToCell x) (parse' ls) (parse' rs)
-  where
-    parse' (x:xs)
-      | x == '('  = parseTree (x:xs)
-      | otherwise = Node (charToCell x) Empty Empty
+    getTree (parsed, rest) 0 = (reverse parsed, rest)
+    getTree (parsed, r:rest) n
+      | r == '('  = getTree (r:parsed, rest) (n+1)
+      | r == ')'  = getTree (r:parsed, rest) (n-1)
+      | otherwise = getTree (r:parsed, rest) n
 
 charToCell :: Char -> Cell
 charToCell '.' = Off
