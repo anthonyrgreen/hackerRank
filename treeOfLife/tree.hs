@@ -3,6 +3,9 @@ import Control.Monad.State
 data Tree a = Empty | Node a (Tree a) (Tree a) deriving (Show, Eq)
 data Cell = On | Off deriving (Show, Eq)
 
+main = example
+example = putStrLn . show . parse $ "((. X (. . .)) . (X . (. X X)))"
+
 parse :: String -> Tree Cell
 parse = parseTree . filter (/= ' ')
 
