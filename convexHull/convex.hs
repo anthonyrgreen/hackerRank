@@ -2,20 +2,11 @@ import Data.List
 import Data.Monoid ((<>))
 import Text.Printf
 
-main :: IO ()
-main = do
-  n <- readLn :: IO Int
-  content <- getContents
-  let  
-    points = map ((\[x, y] -> (x, y)) . map (read::String->Int) . words) . lines $ content
-    ans = solve points
-  printf "%.1f\n" ans
-
 type Point = (Int, Int)
 fI = fromIntegral
 
 solve :: [(Int, Int)] -> Double
-solve points = perimeter . toPairs . solvePath $ points
+solve = perimeter . toPairs . solvePath
   where
     toPairs (p1:p0:ps)  = (p1, p0) : toPairs (p0:ps)
     toPairs _           = []

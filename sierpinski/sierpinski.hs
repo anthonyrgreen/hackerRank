@@ -15,37 +15,51 @@ height = 32
 width = 63
     
 data Orientation = Corner | BotLeft | TopRight deriving (Eq)
+type Index = (Int, Int)
+type SquareBounds = (Index, Index)
 
-printArray :: UArray (Int, Int) Char -> String
-printArray array = intercalate "\n" rows where
-  rows = [[array ! (i, j) | i <- [1..width]] | j <- [height,height-1..1]]
-
-sierpinski :: Int -> UArray (Int, Int) Char
-sierpinski n = amap toDisplay $ straighten sierpinski' where
-  toDisplay       = \x -> if x then '1' else '_'
-  sierpinski'     = blackBox // safety (cutOut n BotLeft (bl, tr)) where
-  blackBox :: UArray (Int, Int) Bool
-  blackBox        = U.array (bl, tr) [(x, True) | x <- range (bl, tr)]
-  safety          = filter (\(ix, _) -> ix /= (width,1))
-  straighten arr  = array (bl,tr) new where
-    new  = [((newX x y,y), arr ! (x,y)) | (x,y) <- range (bl,tr)] where
-      newX x y = (((x-1) + (y-1)) `mod` width) + 1
-
-cutOut :: Int -> Orientation -> -- recursion level, orientation 
-          ((Int, Int), (Int, Int)) -> -- bot left, top right
-          [((Int, Int), Bool)] -- indices to change
-cutOut n pos (bl,tr)
-  | n < 0          = []
-  | pos == BotLeft = cutTopRight (bl,tr) ++ recursiveRemoves
-  | pos == Corner  = recursiveRemoves
-  | otherwise      = []
+printArray :: UArray Index Char -> String
+printArray array = intercalate "\n" rows 
   where
-    recursiveRemoves              = tlRec ++ brRec ++ blRec
-    tlRec                         = cutOut (n-1) Corner topLeft
-    brRec                         = cutOut (n-1) Corner botRight
-    blRec                         = cutOut (n-1) BotLeft botLeft
+    rows = [[array ! (i, j) | i <- [1..width]] | j <- [height,height-1..1]]
+
+sierpinski :: Int -> UArray Index Char
+sierpinski n = amap toDisplay $ straighten sierpinski' 
+  where
+    toDisplay   = \x -> if x then '1' else '_'
+    sierpinski' = filledInBox `without` safety (cutOut n BotLeft (bl, tr)) 
+      where
+        safety = filter (/= (width,1))
+
+straighten :: UArray Index Bool -> UArray Index Bool
+straighten arr = array (bl, tr) new
+  where
+    new = [((newX x y,y), arr ! (x,y)) | (x,y) <- range (bl,tr)] 
+    newX x y = (((x-1) + (y-1)) `mod` width) + 1
+
+without :: UArray Index Bool -> [Index] -> UArray Index Bool
+without original negated = original // [(x, False) | x <- negated]
+
+filledInBox :: UArray (Int, Int) Bool
+filledInBox = U.array (bl, tr) [(x, True) | x <- range (bl, tr)]
+
+cutOut :: Int -> Orientation -> SquareBounds -> [Index]
+cutOut recursionLvl orientation (bl,tr)
+  | recursionLvl < 0        = []
+  | orientation == BotLeft  = cutTopRightDiagonal (bl,tr) ++ recursiveRemovals
+  | orientation == Corner   = recursiveRemovals
+  | otherwise               = []
+  where
+    recursiveRemovals             = tlRec ++ brRec ++ blRec
+    tlRec                         = cutOut (recursionLvl-1) Corner topLeft
+    brRec                         = cutOut (recursionLvl-1) Corner botRight
+    blRec                         = cutOut (recursionLvl-1) BotLeft botLeft
     (topLeft, botLeft, botRight)  = sector (bl,tr)
 
+-- Takes the bottom-left and top-right indices of a square and returns the 
+-- respective bottom-left and top-right indices of the top-left, bottom-left,
+-- and bottom-right sub-squares
+sector :: SquareBounds -> (SquareBounds, SquareBounds, SquareBounds)
 sector ((x1, y1), (x2, y2))   = (topLeft, botLeft, botRight) 
   where
     topLeft     = ((x1, halfY + 1),   (halfX, y2))
@@ -54,9 +68,13 @@ sector ((x1, y1), (x2, y2))   = (topLeft, botLeft, botRight)
     halfX       = x1 + ((x2-x1) `div` 2)
     halfY       = y1 + ((y2-y1) `div` 2)
 
-cutTopRight (bl,tr) = extra:[(x, False) | x <- negatedSquares] 
+-- Takes the bottom-left and top-right indices of a sqare, and returns a list
+-- of all squares resting above the top-left to bottom-right diagonal to
+-- to nullify.
+cutTopRightDiagonal :: SquareBounds -> [Index]
+cutTopRightDiagonal (bl,tr) = extra:negatedSquares
   where
-    extra           = ((fst tr, snd bl), False)
+    extra           = (fst tr, snd bl)
     negatedSquares  = filter (isTopRight (bl,tr)) $ range (bl,tr)
     isTopRight ((x1, y1), (x2, y2)) (x, y) = x' + y' > 1
       where 
