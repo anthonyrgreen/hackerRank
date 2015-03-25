@@ -1,4 +1,5 @@
 import Data.List
+import Data.Monoid ((<>))
 import Text.Printf
 
 main :: IO ()
@@ -6,7 +7,7 @@ main = do
   n <- readLn :: IO Int
   content <- getContents
   let  
-    points = map (\[x, y] -> (x, y)). map (map (read::String->Int)). map words. lines $ content
+    points = map ((\[x, y] -> (x, y)) . map (read::String->Int) . words) . lines $ content
     ans = solve points
   printf "%.1f\n" ans
 
@@ -37,9 +38,7 @@ orientedHull orientation (p:points) = reverse . foldl nextInHull [p] $ points
       | otherwise                             = nextInHull (p1:ps) x
 
 pointComparison :: Point -> Point -> Ordering
-pointComparison (x0,y0) (x1,y1)
-  | x0 /= x1  = x0 `compare` x1 
-  | otherwise = y1 `compare` y0
+pointComparison (x0,y0) (x1,y1) = x0 `compare` x1 <> y1 `compare` y0
 
 rightHandRule :: Point -> Point -> Point -> Ordering
 rightHandRule (x0,y0) (x1,y1) (x2,y2) = z `compare` 0
