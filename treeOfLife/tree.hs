@@ -2,10 +2,6 @@ import Control.Monad.State (state, runState)
 import Data.Vector (Vector, generate, (!))
 import Data.Bits (testBit, (.|.), shift)
 
-
---main = example
---example = putStrLn . show . parseTree $ "((. X (. . .)) . (X . (. X X)))"
-
 main = do
   ruleNum <- readLn :: IO Int
   initialTree <- getLine >>= return . parseTree
@@ -22,7 +18,7 @@ nQueries n currentStep trees = do
   let currentStep' = currentStep + nextStep
   let currentTree = trees !! currentStep'
   putStrLn . cellToString . getEltAt directions $ currentTree
-  nQueries (n - 1) currentStep' trees
+  nQueries (n-1) currentStep' trees
 
 cellToString :: Cell -> String
 cellToString True  = "X"
@@ -46,9 +42,11 @@ step ruleNum tree = step' False tree
         x' = getRule ruleNum [upperNode, getElt l, x, getElt r]
 
 getRule :: Int -> [Cell] -> Cell
-getRule ruleNum = (!) (getRules ruleNum) . bitsToInt . zip [3,2,1,0]
+getRule ruleNum = (!) (getRules ruleNum) . foldl checkBit 0 . zip [3,2..]
   where
-    bitsToInt = foldl (\n (i, c) -> n .|. (shift 1 i)) 0
+    checkBit n (i, cell)
+      | cell      = n .|. (shift 1 i)
+      | otherwise = n
 
 getRules :: Int -> Vector Bool
 getRules = generate 16 . testBit
