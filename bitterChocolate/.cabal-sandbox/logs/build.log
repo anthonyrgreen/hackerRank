@@ -1,0 +1,22 @@
+
+package: dequeue-0.1.5
+os: osx
+arch: x86_64
+compiler: ghc-7.8.3
+client: cabal-install-1.18.0.5
+flags:
+dependencies: safe-0.3.8 base-4.7.0.1 QuickCheck-2.6
+install-outcome: InstallOk
+docs-outcome: Ok
+tests-outcome: NotTried
+
+package: safe-0.3.8
+os: osx
+arch: x86_64
+compiler: ghc-7.8.3
+client: cabal-install-1.18.0.5
+flags:
+dependencies: base-4.7.0.1
+install-outcome: InstallOk
+docs-outcome: Ok
+tests-outcome: NotTried
