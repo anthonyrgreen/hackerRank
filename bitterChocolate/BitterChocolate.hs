@@ -57,36 +57,58 @@
 
 module BitterChocolate (victoryPossible, rootConfigurations) where
 
-import Data.Array.Unboxed (UArray, (//), (!), array, range)
-import Data.Dequeue (BankersDequeue, pushBack, fromList, popFront, length)
+--import Data.Array.Unboxed (UArray, (//), (!), array, range)
+--import Data.Array.Unboxed (range)
+import Data.Array (Array, (//), (!), array, range)
+import Data.Ix (range)
 import Debug.Trace (traceShow)
+import Data.Heap (union, view, singleton, MinHeap, fromList)
+import Data.Ix (Ix)
 
-type Config = (Int, Int, Int)
-type Queue = BankersDequeue Config
-type Array = UArray Config Bool
 maxVal = 25
 
-victoryPossible :: Config -> Bool
-victoryPossible = (!) solutionMatrix
+newtype Config = Config (Int, Int, Int) deriving (Ix, Show)
+type Array' = Data.Array.Array Config (Bool, Maybe Config)
 
-solutionMatrix :: Array
-solutionMatrix = solve (lossSquare, initialSolns) 
-  where
-    lossSquare   = [(1,0,0)]
-    bnds         = ((0,0,0),(maxVal,maxVal,maxVal))
-    initialSolns = array bnds [(ix, False) | ix <- range bnds]
+-- c1 < c2 if we can get to c2 via c1->c1'->c1''->...->c2. 
+-- c1 == c2 if there is no path.
+-- (this is with regard to our flow-reversed graph)
+instance Ord Config where
+  Config (x1, x2, x3) `compare` Config (y1, y2, y3)
+    | x1 == y1 && x2 == y2 && x3 == y3 = EQ
+    | x1 <= y1 && x2 <= y2 && x3 <= y3 = LT
+    | x1 >= y1 && x2 >= y2 && x3 >= y3 = GT
+    | otherwise                        = EQ
 
-solve :: ([Config], Array) -> Array
-solve ([],        solns) = solns
-solve (c:configs, solns) = solve (newConfigs ++ configs, solns')
+instance Eq Config where
+  a == b = a `compare` b == EQ
+
+victoryPossible :: Config -> (Bool, [Config])
+victoryPossible c = case solutionMatrix ! c of
+  (True,   Just x)  -> (True, [x])
+  (False, Nothing)  -> (False, rootConfigurations c)
+
+solutionMatrix :: Array'
+solutionMatrix = solve (lossSquares, initialSolns) 
   where
-    newConfigs = filter (not . (!) solns) . rootConfigurations $ c
-    solns'
-      | solns ! c = solns
-      | otherwise = solns // [(c', True) | c' <- newConfigs]
+    lossSquares  = Data.Heap.singleton (Config (1,0,0)) :: MinHeap Config
+    bnds         = (Config (0,0,0), Config (maxVal,maxVal,maxVal))
+    initialSolns = array bnds [(ix, (False, Nothing)) | ix <- range bnds]
+
+solve :: (MinHeap Config, Array') -> Array'
+solve (inspectionHeap, solns) = case view inspectionHeap of
+  Nothing            -> solns
+  Just (minConfig, configs)  -> solve (configs', solns')
+    where
+      solns' = solns // changedSquares
+      configs' = union configs . fromList $ newConfigs
+      newConfigs = filter (not . fst . (!) solns) . rootConfigurations $ minConfig
+      changedSquares
+        | fst $ solns ! minConfig = []
+        | otherwise               = [(c', (True, Just minConfig)) | c' <- newConfigs]
 
 rootConfigurations :: Config -> [Config]
-rootConfigurations (r1,r2,r3) = a ++ b ++ c ++ d ++ e ++ f
+rootConfigurations (Config (r1,r2,r3)) = map Config $ a ++ b ++ c ++ d ++ e ++ f
   where
     a = [(r1',r2,r3) | r1' <- [r1+1..maxVal]]
     b = [(r1,r2',r3) | r2' <- [r2+1..r1]]

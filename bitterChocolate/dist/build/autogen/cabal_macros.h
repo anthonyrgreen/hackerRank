@@ -21,3 +21,10 @@
   (major1) == 0 && (major2) <  1 || \
   (major1) == 0 && (major2) == 1 && (minor) <= 5)
 
+/* package heap-1.0.2 */
+#define VERSION_heap "1.0.2"
+#define MIN_VERSION_heap(major1,major2,minor) (\
+  (major1) <  1 || \
+  (major1) == 1 && (major2) <  0 || \
+  (major1) == 1 && (major2) == 0 && (minor) <= 2)
+
