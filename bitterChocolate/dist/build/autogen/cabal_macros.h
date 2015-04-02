@@ -14,6 +14,13 @@
   (major1) == 4 && (major2) <  7 || \
   (major1) == 4 && (major2) == 7 && (minor) <= 0)
 
+/* package containers-0.5.5.1 */
+#define VERSION_containers "0.5.5.1"
+#define MIN_VERSION_containers(major1,major2,minor) (\
+  (major1) <  0 || \
+  (major1) == 0 && (major2) <  5 || \
+  (major1) == 0 && (major2) == 5 && (minor) <= 5)
+
 /* package dequeue-0.1.5 */
 #define VERSION_dequeue "0.1.5"
 #define MIN_VERSION_dequeue(major1,major2,minor) (\
