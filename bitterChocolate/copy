@@ -55,8 +55,6 @@
 -- We terminate this process when we have no more values left in the
 -- inspection stack.
 
-module BitterChocolate (victoryPossible, rootConfigurations) where
-
 import Data.Array (Array, (//), (!), array, elems)
 import Data.Ix (Ix, range)
 import Data.Set (insert, notMember, Set, empty)
@@ -65,6 +63,17 @@ maxVal = 25
 
 type Config = (Int, Int, Int)
 type Array' = Data.Array.Array Config (Bool, [Config])
+
+main = do
+  numQueries <- readLn :: IO Int
+  nQueries numQueries
+  
+nQueries :: Int -> IO ()
+nQueries 0 = return ()
+nQueries n = do
+  tuple <- getLine >>= return . (\[a,b,c] -> (a,b,c)) . map read ::words
+  print $ victoryPossible tuple
+  nQueries (n-1)
 
 victoryPossible :: Config -> (Bool, [Config])
 victoryPossible c = solutionMatrix ! c
@@ -76,6 +85,7 @@ solutionMatrix = solve (inspectionList, initialSolns)
     bnds             = ((0,0,0), (maxVal,maxVal,maxVal))
     initialSolns     = array bnds [(ix, (False, [])) | ix <- range bnds]
 
+-- INVARIANT: there exists no x <- configs such that there is a path x->x1->...->minConfig
 solve :: ([Config], Array') -> Array'
 solve ([],          solns) = solns
 solve (min:configs, solns) = solve (configs, solns')
@@ -99,24 +109,27 @@ topoSort' childFunc head (visited, tail)
   where
     (visited', depthSort) = foldl recurse (head |+ visited, tail) (childFunc head)
     recurse (visited, tail) head = topoSort' childFunc head (visited, tail)
-
+    
 rootConfigurations :: Config -> [Config]
 rootConfigurations (r1,r2,r3) = a ++ b ++ c ++ d ++ e ++ f
   where
-    bnds start finish = [start + 1..finish]
-    a = [(r1',r2,r3)   | r1' <- bnds r1 maxVal]
-    b = [(r1,r2',r3)   | r2' <- bnds r2 r1]
-    c = [(r1,r2,r3')   | r3' <- bnds r3 r2]
-    d = [(r1',r2',r3)  | r1  == r2
-                       , r1' <- bnds r1 maxVal
-                       , r2' <- bnds r2 maxVal
-                       , r2' <= r1']
-    e = [(r1,r2',r3')  | r2  == r3
-                       , r2' <- bnds r2 r1
-                       , r3' <- bnds r3 r1
-                       , r3' <= r2']
-    f = [(r1',r2',r3') | r1  == r2  && r2  == r3
-                       , r1' <- bnds r1 maxVal
-                       , r2' <- bnds r1 maxVal
-                       , r3' <- bnds r1 maxVal 
-                       , r3' <= r2' && r2' <= r1']
+    a = [(r1',r2,r3)   | r1' <- [r1+1..maxVal]]
+    b = [(r1,r2',r3)   | r2' <- [r2+1..r1]]
+    c = [(r1,r2,r3')   | r3' <- [r3+1..r2]]
+    d = [(r1',r2',r3)  | r1 == r2
+                        ,r1' <- [r1+1..maxVal]
+                        ,r2' <- [r2+1..maxVal]
+                        ,r2' <= r1']
+    e = [(r1,r2',r3')  | r2 == r3
+                        ,r2' <- [r2+1..r1]
+                        ,r3' <- [r3+1..r1]
+                        ,r3' <= r2']
+    f = [(r1',r2',r3') | r1 == r2 && r2 == r3
+                        ,r1' <- [r1+1..maxVal]
+                        ,r2' <- [r1+1..maxVal]
+                        ,r3' <- [r1+1..maxVal]
+                        ,r3' <= r2' && r2' <= r1']
+
+
+
+
